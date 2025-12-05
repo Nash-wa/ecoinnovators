@@ -6,7 +6,8 @@ import pandas as pd
 from glob import glob
 from tqdm import tqdm
 
-# --- CONFIGURATION ---
+# CONFIGURATION
+
 # paths defined assuming we run from root
 RAW_DATA_DIR = "data/raw"
 PROCESSED_DIR = "data/processed"
@@ -22,6 +23,7 @@ DATASETS = [
 
 os.makedirs(MASKS_DIR, exist_ok=True)
 
+# PREPROCESSING FUNCTIONS
 
 def create_mask_from_polygon(img_shape, annotations):
     """Generates a binary mask from COCO polygon points."""
@@ -84,19 +86,18 @@ def process_folder(dataset_name, split_name, ds_type, quality):
         if not os.path.exists(img_path):
             continue
 
-        # Read Image (to get shape)
+        # read image (to get shape)
         img = cv2.imread(img_path)
         if img is None: continue
         
-        # Create Mask
+        # create masks
         anns = img_to_anns.get(img_id, [])
         if ds_type == 'polygon':
             mask = create_mask_from_polygon(img.shape, anns)
         else:
             mask = create_mask_from_box(img.shape, anns)
             
-        # Save Mask
-        # Naming convention: dataset_split_filename.png to avoid collisions
+        # save mask, name: dataset_split_filename.png 
         safe_name = f"{dataset_name}_{split_name}_{file_name}".replace("/", "_").replace(".jpg", ".png")
         mask_path = os.path.join(MASKS_DIR, safe_name)
         cv2.imwrite(mask_path, mask)
@@ -113,7 +114,8 @@ def process_folder(dataset_name, split_name, ds_type, quality):
     return processed_records
 
 
-# --- MAIN EXECUTION ---
+# MAIN EXECUTION 
+
 if __name__ == "__main__":
     all_data = []
     
@@ -126,11 +128,11 @@ if __name__ == "__main__":
         if os.path.exists(os.path.join(RAW_DATA_DIR, ds['name'], "test")):
             all_data.extend(process_folder(ds['name'], "test", ds['type'], ds['quality']))
 
-    # Save Master CSV
+    # save the master_metadata.csv
     df = pd.DataFrame(all_data)
     csv_path = os.path.join(PROCESSED_DIR, "master_metadata.csv")
     df.to_csv(csv_path, index=False)
     
-    print(f"\n✅ Done! Processed {len(df)} images.")
-    print(f"📝 Metadata saved to: {csv_path}")
-    print(f"🖼️ Masks saved to: {MASKS_DIR}")
+    print(f"\nDone! Processed {len(df)} images.")
+    print(f"Metadata saved to: {csv_path}")
+    print(f"Masks saved to: {MASKS_DIR}")
