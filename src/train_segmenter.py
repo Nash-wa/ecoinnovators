@@ -9,11 +9,11 @@ from tqdm import tqdm
 from dataset import SolarDataset
 
 # HYPERPARAMETERS
-BATCH_SIZE = 16 # Lower than classifier because U-Net is heavy
+BATCH_SIZE = 16
 LEARNING_RATE = 0.0001
 EPOCHS = 20
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-ENCODER = "resnet34"
+ENCODER = "resnet50"
 WEIGHTS = "imagenet"
 SAVE_PATH = "models/segmenter.pth"
 
@@ -28,11 +28,9 @@ def train_one_epoch(model, loader, criterion, optimizer):
         images = images.to(DEVICE)
         masks = masks.to(DEVICE)
         
-        # Forward
         logits = model(images)
         loss = criterion(logits, masks)
         
-        # Backward
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -45,8 +43,7 @@ def train_one_epoch(model, loader, criterion, optimizer):
 if __name__ == "__main__":
     print(f"Using device: {DEVICE}")
     
-    # 1. Prepare Data (High Quality ONLY)
-    # Note: validation set should ideally be split in preprocessor. Using train for POC.
+    # 1. Prepare Data
     train_ds = SolarDataset(
         "data/processed/master_metadata.csv", 
         root_dir=".", 
@@ -58,18 +55,17 @@ if __name__ == "__main__":
     loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True, num_workers=2)
     
     # 2. Setup Model
-    print(f"Loading U-Net with {ENCODER} backbone...")
-    model = smp.Unet(
+    print(f"Loading U-Net++ with {ENCODER} backbone...")
+    model = smp.UnetPlusPlus(
         encoder_name=ENCODER, 
         encoder_weights=WEIGHTS, 
         in_channels=3, 
         classes=1, 
-        activation=None # We use BCEWithLogitsLoss, so no activation here
+        activation=None 
     )
     model = model.to(DEVICE)
     
     # 3. Loss & Optimizer
-    # DiceLoss is great for segmentation, usually combined with BCE
     dice_loss = smp.losses.DiceLoss(mode='binary', from_logits=True)
     bce_loss = nn.BCEWithLogitsLoss()
     
