@@ -89,4 +89,4 @@ if __name__ == "__main__":
         if loss < min_loss:
             min_loss = loss
             torch.save(model.state_dict(), SAVE_PATH)
-            print(f"💾 Model Saved! (Loss: {min_loss:.4f})")
+            print(f"Model Saved! (Loss: {min_loss:.4f})")

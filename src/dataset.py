@@ -49,22 +49,26 @@ class SolarDataset(Dataset):
     def __getitem__(self, idx):
         row = self.df.iloc[idx]
         
-        # Load Image
-        img_path = row['image_path'] # data/raw/-
+        # 1. Load Image
+        img_path = row['image_path'].replace("\\", "/") 
+
+        # Combine with root_dir if needed
         full_img_path = os.path.join(self.root_dir, img_path) if not os.path.isabs(img_path) else img_path
         
         image = cv2.imread(full_img_path)
         if image is None:
+            # Print the path that failed so we can debug easier
             raise FileNotFoundError(f"Image not found: {full_img_path}")
-        
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-        # Load Mask (Needed for Segmentation OR Augmentation consistency)
-        mask_path = row['mask_path']
-
+        # 2. Load Mask 
+        mask_path = row['mask_path'].replace("\\", "/")
+        
         full_mask_path = os.path.join(self.root_dir, mask_path) if not os.path.isabs(mask_path) else mask_path
         
         mask = cv2.imread(full_mask_path, cv2.IMREAD_GRAYSCALE)
+        if mask is None:
+            mask = np.zeros(image.shape[:2], dtype=np.uint8)
 
         # Create dummy mask if missing 
         if mask is None:
